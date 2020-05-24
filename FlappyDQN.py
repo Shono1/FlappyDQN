@@ -6,7 +6,7 @@ from collections import deque
 import numpy as np
 
 game = FlappyBird()
-env = PLE(game, display_screen=False, add_noop_action=True)
+env = PLE(game, display_screen=True, add_noop_action=True)
 ACTIONS = env.getActionSet()
 env.init()
 state = list(env.getGameState().values())
@@ -19,7 +19,7 @@ model.add(tf.keras.layers.Dense(2, activation="linear"))
 model.compile(loss="mse", optimizer=tf.keras.optimizers.Adam(), metrics=["accuracy"])
 model.summary()
 
-MEM_SIZE = 10_000
+MEM_SIZE = 50_000
 BATCH_SIZE = 32
 EPISODES = 5_000
 DISCOUNT = 0.95
@@ -107,6 +107,7 @@ for episode in range(0, EPISODES):
             epsilon = MIN_EPSILON + (MAX_EPSILON - MIN_EPSILON) * np.exp(-EPSILON_DECAY * total_steps)
 
         action = choose_action()
+        print(action)
         reward = env.act(ACTIONS[action])
         new_state = list(env.getGameState().values())
         ep_reward += reward
