@@ -6,26 +6,27 @@ from collections import deque
 import numpy as np
 
 game = FlappyBird()
-env = PLE(game, display_screen=True, add_noop_action=True)
+env = PLE(game, display_screen=False, add_noop_action=True)
 ACTIONS = env.getActionSet()
 env.init()
-state = list(env.getGameState().values())
+state = list(env.getGameState().values())[0:4]
 
 model = tf.keras.Sequential()
-model.add(tf.keras.layers.Dense(8, activation="relu", input_shape=np.array(state).shape))
+# model.add(tf.keras.layers.Dense(8, activation="relu", input_shape=np.array(state).shape))
+model.add(tf.keras.layers.Dense(4, activation="relu", input_shape=np.array(state).shape))
 model.add(tf.keras.layers.Dense(16, activation="relu"))
 model.add(tf.keras.layers.Dense(16, activation="relu"))
 model.add(tf.keras.layers.Dense(2, activation="linear"))
 model.compile(loss="mse", optimizer=tf.keras.optimizers.Adam(), metrics=["accuracy"])
 model.summary()
 
-MEM_SIZE = 50_000
+MEM_SIZE = 30_000
 BATCH_SIZE = 32
 EPISODES = 5_000
-DISCOUNT = 0.95
+DISCOUNT = 0.99
 MAX_EPSILON = 1
 MIN_EPSILON = 0.01
-EPSILON_DECAY = 0.00005
+EPSILON_DECAY = 0.0001
 
 memory = deque(maxlen=MEM_SIZE)
 epsilon = MAX_EPSILON
@@ -40,12 +41,12 @@ def init_replay_memory():
         done = False
         # state, reward, done, info = env.step(env.action_space.sample())
         env.reset_game()
-        state = list(env.getGameState().values())
+        state = list(env.getGameState().values())[0:4]
 
         while not env.game_over() and len(memory) <= BATCH_SIZE:
             action = np.argmax(random.choice(ACTIONS))
             reward = env.act(ACTIONS[action])
-            new_state = list(env.getGameState().values())
+            new_state = list(env.getGameState().values())[0:4]
 
             if env.game_over():
                 new_state = np.zeros(state.shape)
@@ -68,13 +69,14 @@ def init_replay_memory():
 
 def choose_action():
     if random.random() < epsilon:
+        print("eps")
         return int(random.random() * len(ACTIONS))
-    return np.argmax(model.predict(np.array([state])))
+    return np.argmax(model.predict(np.array([state]))[0])
 
 
 def update_network():
     batch = random.choices(memory, k=BATCH_SIZE)
-    x = np.zeros((BATCH_SIZE, 8))
+    x = np.zeros((BATCH_SIZE, 4))
     y = np.zeros((BATCH_SIZE, 2))
     for i, mem in enumerate(batch):
         state, action, reward, new_state = mem
@@ -84,7 +86,8 @@ def update_network():
         if not (new_state == [0] * len(new_state)):
             update = reward + DISCOUNT * np.max(model.predict(np.array([new_state])))
 
-        q_vals = model.predict(np.array([state]))
+        q_vals = model.predict(np.array([state]))[0]
+
         q_vals[action] = update
         y[i] = q_vals
 
@@ -97,7 +100,7 @@ init_replay_memory()
 
 for episode in range(0, EPISODES):
     env.reset_game()
-    state = list(env.getGameState().values())
+    state = list(env.getGameState().values())[0:4]
     ep_reward = 0
 
     while not env.game_over():
@@ -109,8 +112,9 @@ for episode in range(0, EPISODES):
         action = choose_action()
         print(action)
         reward = env.act(ACTIONS[action])
-        new_state = list(env.getGameState().values())
+        new_state = list(env.getGameState().values())[0:4]
         ep_reward += reward
+        update_network()
 
         if env.game_over():
             new_state = [0] * len(new_state)
