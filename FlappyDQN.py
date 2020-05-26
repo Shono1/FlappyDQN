@@ -32,7 +32,7 @@ EPSILON_DECAY = 0.0001
 memory = deque(maxlen=MEM_SIZE)
 epsilon = MAX_EPSILON
 total_steps = 0
-max_reward = 0
+max_reward = -5
 
 
 def init_replay_memory():
@@ -101,6 +101,7 @@ def update_network():
 
 
 init_replay_memory()
+model.save("Models/start.h5".format(max_reward))
 
 for episode in range(0, EPISODES):
     env.reset_game()
