@@ -9,13 +9,14 @@ game = FlappyBird()
 env = PLE(game, display_screen=False, add_noop_action=True)
 ACTIONS = env.getActionSet()
 env.init()
-state = list(env.getGameState().values())[0:4]
+# state = list(env.getGameState().values())[0:4]
+state = list(env.getGameState().values())
 
 model = tf.keras.Sequential()
-# model.add(tf.keras.layers.Dense(8, activation="relu", input_shape=np.array(state).shape))
-model.add(tf.keras.layers.Dense(4, activation="relu", input_shape=np.array(state).shape))
-model.add(tf.keras.layers.Dense(16, activation="relu"))
-model.add(tf.keras.layers.Dense(16, activation="relu"))
+model.add(tf.keras.layers.Dense(8, activation="relu", input_shape=np.array(state).shape))
+# model.add(tf.keras.layers.Dense(4, activation="relu", input_shape=np.array(state).shape))
+model.add(tf.keras.layers.Dense(24, activation="relu"))
+model.add(tf.keras.layers.Dense(20, activation="relu"))
 model.add(tf.keras.layers.Dense(2, activation="linear"))
 model.compile(loss="mse", optimizer=tf.keras.optimizers.Adam(), metrics=["accuracy"])
 model.summary()
@@ -41,12 +42,14 @@ def init_replay_memory():
         done = False
         # state, reward, done, info = env.step(env.action_space.sample())
         env.reset_game()
-        state = list(env.getGameState().values())[0:4]
+        # state = list(env.getGameState().values())[0:4]
+        state = list(env.getGameState().values())
 
         while not env.game_over() and len(memory) <= BATCH_SIZE:
             action = np.argmax(random.choice(ACTIONS))
             reward = env.act(ACTIONS[action])
-            new_state = list(env.getGameState().values())[0:4]
+            # new_state = list(env.getGameState().values())[0:4]
+            new_state = list(env.getGameState().values())
 
             if env.game_over():
                 new_state = np.zeros(state.shape)
@@ -76,7 +79,8 @@ def choose_action():
 
 def update_network():
     batch = random.choices(memory, k=BATCH_SIZE)
-    x = np.zeros((BATCH_SIZE, 4))
+    # x = np.zeros((BATCH_SIZE, 4))
+    x = np.zeros((BATCH_SIZE, 8))
     y = np.zeros((BATCH_SIZE, 2))
     for i, mem in enumerate(batch):
         state, action, reward, new_state = mem
@@ -100,7 +104,8 @@ init_replay_memory()
 
 for episode in range(0, EPISODES):
     env.reset_game()
-    state = list(env.getGameState().values())[0:4]
+    # state = list(env.getGameState().values())[0:4]
+    state = list(env.getGameState().values())
     ep_reward = 0
 
     while not env.game_over():
@@ -112,7 +117,8 @@ for episode in range(0, EPISODES):
         action = choose_action()
         print(action)
         reward = env.act(ACTIONS[action])
-        new_state = list(env.getGameState().values())[0:4]
+        # new_state = list(env.getGameState().values())[0:4]
+        new_state = list(env.getGameState().values())
         ep_reward += reward
         update_network()
 
